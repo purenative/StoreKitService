@@ -85,6 +85,10 @@ public final class StoreKitService: NSObject, ObservableObject {
         purchaseHistory.isSubscriptionActive(for: product)
     }
     
+    public func isPurchasedProduct(_ product: StoreKitProduct) -> Bool {
+        purchaseHistory.isPurchasedProduct(product)
+    }
+    
     public func bind(subscriptionGroupID: String,
                      subscriptionActivePublisher: inout Published<Bool>.Publisher) {
         

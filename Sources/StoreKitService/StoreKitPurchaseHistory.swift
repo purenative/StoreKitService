@@ -48,7 +48,17 @@ final class StoreKitPurchaseHistory {
             $0.productID == product.product.productIdentifier &&
             $0.expiresDateTimeStamp > currentTime
         } ?? []
-        return lastReceiptInfos.count > 0
+        return lastReceiptInfos.count > .zero
+    }
+    
+    func isPurchasedProduct(_ product: StoreKitProduct) -> Bool {
+        guard let lastVerificationResponse = getStoredVerificationResponse() else {
+            return false
+        }
+        let purchasedProducts = lastVerificationResponse.receipt.inApp.filter {
+            $0.productID == product.product.productIdentifier
+        }
+        return purchasedProducts.count > .zero
     }
     
 }
