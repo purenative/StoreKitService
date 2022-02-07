@@ -1,7 +1,7 @@
 struct AppStoreVerificationResponse: Codable {
     
     let latestReceiptInfo: [LatestReceiptInfo]?
-    let receipt: Receipt
+    let receipt: Receipt?
     let status: Int
     
     enum CodingKeys: String, CodingKey {
@@ -44,7 +44,7 @@ struct LatestReceiptInfo: Codable {
 
 struct Receipt: Codable {
     
-    let inApp: [InApp]
+    let inApp: [InApp]?
     
     enum CodingKeys: String, CodingKey {
         

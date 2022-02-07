@@ -55,7 +55,10 @@ final class StoreKitPurchaseHistory {
         guard let lastVerificationResponse = getStoredVerificationResponse() else {
             return false
         }
-        let purchasedProducts = lastVerificationResponse.receipt.inApp.filter {
+        guard let inApps = lastVerificationResponse.receipt?.inApp else {
+            return false
+        }
+        let purchasedProducts = inApps.filter {
             $0.productID == product.product.productIdentifier
         }
         return purchasedProducts.count > .zero
