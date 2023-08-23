@@ -26,7 +26,7 @@ public final class SKHistoryService {
             return
         }
         
-        let latestUserInApps = verificationResponse.latestReceiptInfo?.filter { $0.appAccountToken == applicationUsername } ?? []
+        let latestUserInApps = verificationResponse.latestReceiptInfo?.filter { $0.appAccountToken == applicationUsername?.lowercased() } ?? []
         latestPurchaseRecords = latestUserInApps.map(SKPurchaseRecord.init).sorted().reversed()
         
         allInAppRecords = verificationResponse.receipt?.inApp?.map(SKPurchaseRecord.init).sorted().reversed() ?? []

@@ -15,7 +15,7 @@ public final class SKPurchaseServise: NSObject, ObservableObject {
     
     public func purchase(product: SKProduct, applicationUsername: String? = nil) async -> Bool {
         let paymentProxy = SKPaymentProxy(
-            target: .purchase(product, applicationUsername: applicationUsername)
+            target: .purchase(product, applicationUsername: applicationUsername?.lowercased())
         )
         return await paymentProxy.process()
     }

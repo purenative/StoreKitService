@@ -75,10 +75,10 @@ private extension SKPaymentProxy {
         guard transaction.transactionState != .deferred && transaction.transactionState != .purchasing else {
             return
         }
-        guard case let .purchase(product, applicationUsername) = target else {
+        guard case let .purchase(product, _) = target else {
             return
         }
-        guard product.productIdentifier == transaction.payment.productIdentifier, transaction.payment.applicationUsername == applicationUsername else {
+        guard product.productIdentifier == transaction.payment.productIdentifier else {
             return
         }
         
