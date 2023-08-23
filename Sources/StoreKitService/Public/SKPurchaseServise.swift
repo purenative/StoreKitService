@@ -13,13 +13,22 @@ public final class SKPurchaseServise: NSObject, ObservableObject {
         return products
     }
     
-    public func purchase(product: SKProduct) async -> Bool {
-        let paymentProxy = SKPaymentProxy(target: .purchase(product))
+    public func purchase(product: SKProduct, applicationUsername: String? = nil) async -> Bool {
+        let paymentProxy = SKPaymentProxy(
+            target: .purchase(product, applicationUsername: applicationUsername)
+        )
         return await paymentProxy.process()
     }
     
-    public func restorePurchases() async -> Bool {
-        let paymentProxy = SKPaymentProxy(target: .restoreTransactions)
+    public func restorePurchases(applicationUsername: String? = nil) async -> Bool {
+        let paymentProxy = SKPaymentProxy(
+            target: .restoreTransactions(applicationUsername: applicationUsername)
+        )
+        return await paymentProxy.process()
+    }
+    
+    public func redeemCode() async -> Bool {
+        let paymentProxy = SKPaymentProxy(target: .redeemCode)
         return await paymentProxy.process()
     }
     

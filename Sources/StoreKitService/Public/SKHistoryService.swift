@@ -9,22 +9,27 @@ public final class SKHistoryService {
     private let masterSharedKey: String
     
     @Published
-    public private(set) var purchaseRecords: [SKPurchaseRecord] = []
+    public private(set) var latestPurchaseRecords: [SKPurchaseRecord] = []
+    
+    @Published
+    public private(set) var allInAppRecords: [SKPurchaseRecord] = []
     
     public init(masterSharedKey: String) {
         self.masterSharedKey = masterSharedKey
     }
     
     @MainActor
-    public func refresh() async {
+    public func refresh(applicationUsername: String?) async {
         let verificationResponse = await getLatestVerificationResponse()
         
         guard let verificationResponse else {
             return
         }
         
-        let inApps = Set((verificationResponse.latestReceiptInfo ?? []) + (verificationResponse.receipt?.inApp ?? []))
-        purchaseRecords = inApps.map(SKPurchaseRecord.init).sorted().reversed()
+        let latestUserInApps = verificationResponse.latestReceiptInfo?.filter { $0.appAccountToken == applicationUsername } ?? []
+        latestPurchaseRecords = latestUserInApps.map(SKPurchaseRecord.init).sorted().reversed()
+        
+        allInAppRecords = verificationResponse.receipt?.inApp?.map(SKPurchaseRecord.init).sorted().reversed() ?? []
     }
     
     public func requestReceiptString() -> String? {
@@ -46,7 +51,7 @@ public final class SKHistoryService {
     public func isSubscriptionActive(productIdentifier: String) -> Bool {
         let now = Date()
         
-        let record = purchaseRecords.first {
+        let record = latestPurchaseRecords.first {
             $0.productID == productIdentifier &&
             $0.purchaseDate...$0.expiresDate ~= now
         }
@@ -55,7 +60,7 @@ public final class SKHistoryService {
     }
     
     public func isProductAlreadyPurchased(productIdentifier: String) -> Bool {
-        let record = purchaseRecords.first {
+        let record = allInAppRecords.first {
             $0.productID == productIdentifier
         }
         

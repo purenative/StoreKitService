@@ -1,17 +1,9 @@
 import StoreKit
 
-enum SKPaymentProxyTarget {
+final class SKPaymentProxy: NSObject {
     
-    case purchase(SKProduct)
-    case restoreTransactions
-    
-}
-
-final class SKPaymentProxy: NSObject, SKPaymentTransactionObserver {
-    
+    private let paymentQueue = SKPaymentQueue.default()
     private let target: SKPaymentProxyTarget
-    
-    private var payment: SKPayment!
     private var continuation: CheckedContinuation<Bool, Never>!
     
     init(target: SKPaymentProxyTarget) {
@@ -20,24 +12,30 @@ final class SKPaymentProxy: NSObject, SKPaymentTransactionObserver {
     
     @MainActor
     func process() async -> Bool {
-        SKPaymentQueue.default().add(self)
-        
-        if case let .purchase(product) = target {
-            self.payment = SKPayment(product: product)
-        }
-        
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
             self.enqueuePayment()
         }
     }
     
-    // MARK: - SKPaymentTransactionObserver
+}
+
+// MARK: - SKPaymentTransactionObserver
+extension SKPaymentProxy: SKPaymentTransactionObserver {
+    
     func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
-        for transaction in transactions {
-            if transaction.transactionState != .purchasing {
-                processTransaction(transaction)
+        #if DEBUG
+        print("STOREKITSERVICE: Transactions updated for target", target)
+        #endif
+        
+        switch target {
+        case .purchase:
+            for transaction in transactions {
+                processPaymentTransaction(transaction)
             }
+            
+        case .restoreTransactions, .redeemCode:
+            processRestoredPaymentTransactions(transactions)
         }
     }
     
@@ -46,33 +44,77 @@ final class SKPaymentProxy: NSObject, SKPaymentTransactionObserver {
 private extension SKPaymentProxy {
     
     func enqueuePayment() {
-        if let payment {
-            SKPaymentQueue.default().add(payment)
-        } else {
-            SKPaymentQueue.default().restoreCompletedTransactions()
+        paymentQueue.add(self)
+        
+        #if DEBUG
+        print("STOREKITSERVICE: Enqueued payment with target:", target)
+        #endif
+
+        switch target {
+        case let .purchase(product, applicationUsername):
+            let payment = SKMutablePayment(product: product)
+            payment.applicationUsername = applicationUsername
+            paymentQueue.add(payment)
+            
+        case let .restoreTransactions(applicationUsername):
+            paymentQueue.restoreCompletedTransactions(withApplicationUsername: applicationUsername)
+            
+        case .redeemCode:
+            paymentQueue.presentCodeRedemptionSheet()
         }
     }
     
-    func processTransaction(_ transaction: SKPaymentTransaction) {
-        var purchased = false
-        var restored = false
+    func processPaymentTransaction(_ transaction: SKPaymentTransaction) {
+        #if DEBUG
+        print("STOREKITSERVICE: Product identifier:", transaction.payment.productIdentifier)
+        print("STOREKITSERVICE: Transaction state:", transaction.transactionState)
+        print("STOREKITSERVICE: Application username:", transaction.payment.applicationUsername ?? "-")
+        print("STOREKITSERVICE:", String(repeating: "-", count: 10))
+        #endif
         
-        switch target {
-        case let .purchase(product):
-            guard product.productIdentifier == transaction.payment.productIdentifier else {
-                return
-            }
-            purchased = transaction.transactionState == .purchased
-            
-        case .restoreTransactions:
-            restored = transaction.transactionState == .restored
+        guard transaction.transactionState != .deferred && transaction.transactionState != .purchasing else {
+            return
+        }
+        guard case let .purchase(product, applicationUsername) = target else {
+            return
+        }
+        guard product.productIdentifier == transaction.payment.productIdentifier, transaction.payment.applicationUsername == applicationUsername else {
+            return
         }
         
-        SKPaymentQueue.default().finishTransaction(transaction)
-        SKPaymentQueue.default().remove(self)
-        
+        let purchased = transaction.transactionState == .purchased
+        let restored = transaction.transactionState == .restored
         let successed = purchased || restored
-        continuation?.resume(returning: successed)
+        
+        completeWithSuccess(
+            successed,
+            transactions: [transaction]
+        )
+    }
+    
+    func processRestoredPaymentTransactions(_ transactions: [SKPaymentTransaction]) {
+        #if DEBUG
+        for transaction in transactions {
+            print("STOREKITSERVICE: Product identifier:", transaction.payment.productIdentifier)
+            print("STOREKITSERVICE: Transaction state:", transaction.transactionState)
+            print("STOREKITSERVICE: Application username:", transaction.payment.applicationUsername ?? "-")
+            print("STOREKITSERVICE:", String(repeating: "-", count: 10))
+        }
+        #endif
+        
+        completeWithSuccess(
+            true,
+            transactions: transactions
+        )
+    }
+    
+    func completeWithSuccess(_ success: Bool, transactions: [SKPaymentTransaction]) {
+        for transaction in transactions {
+            paymentQueue.finishTransaction(transaction)
+        }
+        paymentQueue.remove(self)
+        
+        continuation?.resume(returning: success)
         continuation = nil
     }
     

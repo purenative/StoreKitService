@@ -9,6 +9,7 @@ struct InApp: Codable, Hashable, Equatable {
     let purchaseDateMS: String
     let originalPurchaseDateMS: String
     let expiresDateMS: String
+    let appAccountToken: String?
     
     enum CodingKeys: String, CodingKey {
         
@@ -19,6 +20,7 @@ struct InApp: Codable, Hashable, Equatable {
         case purchaseDateMS = "purchase_date_ms"
         case originalPurchaseDateMS = "original_purchase_date_ms"
         case expiresDateMS = "expires_date_ms"
+        case appAccountToken = "app_account_token"
         
     }
     
