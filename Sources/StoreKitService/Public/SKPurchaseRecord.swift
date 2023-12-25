@@ -8,6 +8,7 @@ public struct SKPurchaseRecord: Identifiable, Comparable {
     public let purchaseDate: Date
     public let originalPurchaseDate: Date
     public let expiresDate: Date
+    public let appAccountToken: String?
     
     init(inApp: InApp) {
         transactionID = inApp.transactionID
@@ -16,6 +17,7 @@ public struct SKPurchaseRecord: Identifiable, Comparable {
         purchaseDate = Date(millisecondsSince1970: Int(inApp.purchaseDateMS) ?? 0)
         originalPurchaseDate = Date(millisecondsSince1970: Int(inApp.originalPurchaseDateMS) ?? 0)
         expiresDate = Date(millisecondsSince1970: Int(inApp.expiresDateMS) ?? 0)
+        appAccountToken = inApp.appAccountToken
     }
     
     // MARK: - Identifiable

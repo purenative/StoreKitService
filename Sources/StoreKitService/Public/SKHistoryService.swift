@@ -19,14 +19,14 @@ public final class SKHistoryService {
     }
     
     @MainActor
-    public func refresh(applicationUsername: String?) async {
+    public func refresh() async {
         let verificationResponse = await getLatestVerificationResponse()
         
         guard let verificationResponse else {
             return
         }
         
-        let latestUserInApps = verificationResponse.latestReceiptInfo?.filter { $0.appAccountToken == applicationUsername?.lowercased() } ?? []
+        let latestUserInApps = verificationResponse.latestReceiptInfo ?? []
         latestPurchaseRecords = latestUserInApps.map(SKPurchaseRecord.init).sorted().reversed()
         
         allInAppRecords = verificationResponse.receipt?.inApp?.map(SKPurchaseRecord.init).sorted().reversed() ?? []
